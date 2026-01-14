@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home | FiTech • AI-Powered Predictive Fitness System</title>
+  <link rel="stylesheet" href="/testpublic/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <button class="menu-toggle"><i class="fas fa-bars"></i></button>
+      <a style="color: #fff;text-decoration: none;display:flex;align-items:center;gap:12px;" href="#">
+        <h1>
+          <span class="brand-icon"><i class="fas fa-dumbbell"></i></span>
+          <span style="color:#fff; font-weight:700;">FiTech</span>
+          <small style="color:var(--muted); font-weight:600; font-size:16px; margin: auto">• A Fitness Partner Powered by AI</small>
+        </h1>
+      </a>
+      <nav>
+        <ul id="navMenu">
+          <li><a href="#" data-target="home">Home</a></li>
+          <li><a href="#" data-target="history">History</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="home" class="hero-section">
+      <div class="hero-card" style="width: 800px; text-align: center; margin: auto;">
+        <h2 style="font-size: 32px; margin-bottom: 16px;">Train Smarter with FiTech</h2>
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 30px;">Upload a full-body image to get your personalized fitness plan powered by machine learning.</p>
+
+        <!-- Introduction Section -->
+        <div class="intro-section">
+          <!-- Features Grid -->
+          <div class="intro-features">
+            <div class="intro-feature-item">
+              <div class="intro-icon"><i class="fas fa-brain"></i></div>
+              <h4>AI-Powered Analysis</h4>
+              <p>Our machine learning model analyzes your body type and helps create the perfect fitness plan tailored just for you.</p>
+            </div>
+            <div class="intro-feature-item">
+              <div class="intro-icon"><i class="fas fa-chart-line"></i></div>
+              <h4>Track Your Progress</h4>
+              <p>Monitor your fitness journey with our history feature and see how far you've come.</p>
+            </div>
+            <div class="intro-feature-item">
+              <div class="intro-icon"><i class="fas fa-utensils"></i></div>
+              <h4>Custom Diet Plans</h4>
+              <p>Get personalized nutrition recommendations based on your body type and fitness goals.</p>
+            </div>
+          </div>
+
+          <!-- How It Works -->
+          <div class="how-it-works">
+            <h3><i class="fas fa-question-circle"></i> How It Works</h3>
+            <div class="steps-container">
+              <div class="step-item">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <h5>Upload Your Photo</h5>
+                  <p>Take a full-body photo and upload it to our secure system.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <h5>AI Analysis</h5>
+                  <p>Our AI identifies your body type (Ectomorph, Mesomorph, or Endomorph).</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <h5>Get Your Plan</h5>
+                  <p>Receive a personalized workout and diet plan based on your goals.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Get Started Button -->
+        <button id="getStartedBtn" class="btn primary-btn get-started-btn">
+          <i class="fas fa-rocket"></i> Get Started
+        </button>
+
+        <!-- Hidden File Input -->
+        <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png" style="display: none;">
+
+        <!-- Upload Area (Initially Hidden) -->
+        <div id="uploadArea" class="upload-area" style="display: none; margin: auto; max-width: 500px;">
+          <p style="color:var(--muted); margin-bottom: 16px;">Select a full-body image for analysis:</p>
+          
+          <div class="image-preview-container">
+            <div id="loadingSpinner" class="spinner-container" style="display: none;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><linearGradient id="a12"><stop offset="0" stop-color="#28A745" stop-opacity="0"></stop><stop offset="1" stop-color="#28A745"></stop></linearGradient><circle fill="none" stroke="url(#a12)" stroke-width="15" stroke-linecap="round" stroke-dasharray="0 44 0 44 0 44 0 44 0 360" cx="100" cy="100" r="70" transform-origin="center"><animateTransform type="rotate" attributeName="transform" calcMode="discrete" dur="2" values="360;324;288;252;216;180;144;108;72;36" repeatCount="indefinite"></animateTransform></circle></svg>
+              <p>Analyzing...</p>
+            </div>
+
+            <div class="image-preview-wrapper" style="display: none;">
+              <img id="imagePreview" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+              <button type="button" id="removeImageBtn" class="remove-image-btn" title="Remove image">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+            <p id="previewPlaceholder" style="color:var(--muted); padding: 40px 20px; border-radius: 8px; background: rgba(0,0,0,0.12); width: 100%; text-align: center;">No image selected</p>
+          </div>
+
+          <!-- Analyze Image Button (Step 1) -->
+          <button id="analyzeImageBtn" class="btn success-btn" style="width: 100%; margin-top: 24px; padding: 14px;" disabled>
+            <i class="fas fa-camera"></i> Analyze Image
+          </button>
+
+          <!-- Analysis Result Display -->
+          <div id="analysisResult" style="display: none; margin-top: 20px; padding: 16px; background: rgba(0, 208, 132, 0.1); border: 1px solid rgba(0, 208, 132, 0.3); border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+              <i class="fas fa-check-circle" style="color: var(--accent-2); font-size: 20px;"></i>
+              <span style="color: #fff; font-weight: 600;">Analysis Complete!</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <span style="font-size: 12px; color: var(--muted);">Body Type:</span>
+                <div style="color: #fff; font-weight: 600;" id="detectedBodyType">-</div>
+              </div>
+              <div>
+                <span style="font-size: 12px; color: var(--muted);">Confidence:</span>
+                <div style="color: #fff; font-weight: 600;" id="detectedConfidence">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Survey Section (Initially Hidden - shown after successful analysis) -->
+          <div id="surveySection" style="display: none;">
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+              <p style="color: var(--muted); margin-bottom: 20px; font-size: 14px;"><i class="fas fa-clipboard-list" style="margin-right: 8px; color: var(--accent);"></i>Now, tell us about your fitness preferences:</p>
+              
+              <!-- Fitness Goal -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Fitness Goal:</label>
+                <div class="custom-select-wrapper">
+                  <select id="goalSelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="Muscle Gain">Muscle Gain</option>
+                    <option value="Fat Loss">Fat Loss</option>
+                    <option value="Maintenance">Maintenance</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Duration (weeks) -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Duration (weeks):</label>
+                <div class="custom-select-wrapper">
+                  <select id="durationSelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="4">4 weeks</option>
+                    <option value="8">8 weeks</option>
+                    <option value="12">12 weeks</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Fitness Level -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Fitness Level:</label>
+                <div class="custom-select-wrapper">
+                  <select id="levelSelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Workout Location -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Workout Location:</label>
+                <div class="custom-select-wrapper">
+                  <select id="locationSelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="Home">Home</option>
+                    <option value="Gym">Gym</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Number of Training Days per Week -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Training Days per Week:</label>
+                <div class="custom-select-wrapper">
+                  <select id="trainingDaysSelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="2">2 days</option>
+                    <option value="3">3 days</option>
+                    <option value="4">4 days</option>
+                    <option value="5">5 days</option>
+                    <option value="6">6 days</option>
+                    <option value="7">7 days</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Dietary Restrictions -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Dietary Restrictions:</label>
+                <div class="custom-select-wrapper">
+                  <select id="dietarySelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="None">None</option>
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Vegan">Vegan</option>
+                    <option value="Gluten-free">Gluten-free</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <button id="generatePlanBtn" class="btn success-btn" style="width: 100%; margin-top: 24px; padding: 14px;">
+                <i class="fas fa-magic"></i> Generate My Plan
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Section (Initially Hidden) -->
+        <div id="resultsSection" class="results-area" style="display: none; margin-top: 24px; max-width: 500px;">
+          <h3 style="color: #fff; margin-top: 0; margin-bottom: 20px;">Your Personalized Fitness Plan</h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Body Type</div>
+              <div style="font-weight: 600; color: #fff;" id="bodyTypeResult">-</div>
+            </div>
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Confidence</div>
+              <div style="font-weight: 600; color: #fff;" id="confidenceResult">-</div>
+            </div>
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Plan Level</div>
+              <div style="font-weight: 600; color: #fff;" id="planLevel">-</div>
+            </div>
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Duration</div>
+              <div style="font-weight: 600; color: #fff;" id="planDuration">-</div>
+            </div>
+          </div>
+
+          <div class="result-item" style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Location</div>
+            <div style="font-weight: 600; color: #fff;" id="planLocation">-</div>
+          </div>
+
+          <div class="result-item" style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Exercises</div>
+            <div style="color: var(--muted); font-size: 14px;" id="planExercises">-</div>
+          </div>
+
+          <div class="result-item" style="margin-bottom: 20px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Diet Plan</div>
+            <div style="color: var(--muted); font-size: 14px;" id="planDiet">-</div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none;" id="fallbackNotice">
+            <i class="fas fa-info-circle" style="color: #ff6b00; margin-right: 8px;"></i>
+            <span style="font-size: 13px; color: var(--muted);">Using a fallback plan. A custom plan for your specific body type and goal combination will be available soon.</span>
+          </div>
+
+          <button class="btn primary-btn" style="width: 100%;" onclick="resetForm()">
+            <i class="fas fa-redo"></i> New Analysis
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="history" class="history-section">
+      <h2>Previous Workouts</h2>
+      <div id="historyList" class="history-list"></div>
+      <p id="noHistoryMessage" style="display:none; text-align:center; color:var(--muted)">No previous workouts found.</p>
+    </section>
+    <button id="loadMoreBtn" class="btn" style="display: none; margin: 20px auto 0;">Show More</button>
+
+  </main>
+
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="footer-logo"><i class="fas fa-dumbbell"></i> FiTech</span>
+          <p>AI-Powered Predictive Fitness System</p>
+        </div>
+      </div>
+      <p class="footer-copyright">&copy; 2026 FiTech. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+
+  <script>
+    const INFERENCE_API_URL = "https://XXXX.ngrok-free.app/predict";
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const navMenu = document.getElementById("navMenu");
+
+      document.querySelectorAll("#navMenu a[data-target]").forEach((menuItem) => {
+        menuItem.addEventListener("click", function (e) {
+          e.preventDefault();
+
+          const targetId = this.getAttribute("data-target");
+          const targetSection = document.getElementById(targetId);
+
+          // Reset form when clicking Home
+          if (targetId === "home") {
+            resetForm();
+          }
+
+          if (targetSection) {
+            targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+
+          navMenu.classList.remove("show");
+        });
+      });
+
+      // Logo click handler - reset form
+      document.querySelector("header a[href='#']").addEventListener("click", function(e) {
+        e.preventDefault();
+        resetForm();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+
+      // Get Started Button Click Handler
+      document.getElementById('getStartedBtn').addEventListener('click', function() {
+        document.getElementById('uploadArea').style.display = 'block';
+        document.querySelector('.intro-section').style.display = 'none';
+        this.style.display = 'none';
+      });
+
+      // File Input Change Handler
+      document.getElementById('imageInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.src = e.target.result;
+            document.querySelector('.image-preview-wrapper').style.display = 'block';
+            document.getElementById('previewPlaceholder').style.display = 'none';
+            document.getElementById('analyzeImageBtn').disabled = false;
+          }
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Remove Image Button Handler
+      document.getElementById('removeImageBtn').addEventListener('click', function() {
+        document.getElementById('imageInput').value = '';
+        document.getElementById('imagePreview').src = '';
+        document.querySelector('.image-preview-wrapper').style.display = 'none';
+        document.getElementById('previewPlaceholder').style.display = 'block';
+        document.getElementById('analyzeImageBtn').disabled = true;
+        // Hide survey section and analysis result when image is removed
+        document.getElementById('surveySection').style.display = 'none';
+        document.getElementById('analysisResult').style.display = 'none';
+        window.analysisData = null;
+      });
+
+      // Trigger file input when clicking on preview placeholder
+      document.getElementById('previewPlaceholder').addEventListener('click', function() {
+        document.getElementById('imageInput').click();
+      });
+
+      // Store analysis data globally
+      window.analysisData = null;
+
+      // Step 1: Analyze Image Button Click Handler
+      document.getElementById('analyzeImageBtn').addEventListener('click', async function() {
+        const fileInput = document.getElementById('imageInput');
+        if (!fileInput.files[0]) return;
+
+        // Show loading spinner
+        document.getElementById('loadingSpinner').style.display = 'flex';
+        document.getElementById('analyzeImageBtn').disabled = true;
+        
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+
+        try {
+            const response = await fetch("/api/predict", { 
+              method: "POST", 
+              body: formData })
+
+
+          const data = await response.json();
+          
+          if (response.ok) {
+            // Store analysis data for later use
+            window.analysisData = data;
+            
+            // Display analysis result
+            document.getElementById('detectedBodyType').textContent = data.predicted_body_type;
+            document.getElementById('detectedConfidence').textContent = `${(data.confidence * 100).toFixed(1)}%`;
+            document.getElementById('analysisResult').style.display = 'block';
+            
+            // Hide analyze button and show survey section
+            document.getElementById('analyzeImageBtn').style.display = 'none';
+            document.getElementById('surveySection').style.display = 'block';
+          } else {
+            alert(`Error: ${data.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          alert('Failed to connect to the server. Please try again.');
+          console.error(error);
+        } finally {
+          document.getElementById('loadingSpinner').style.display = 'none';
+          document.getElementById('analyzeImageBtn').disabled = false;
+        }
+      });
+
+      // Step 2: Generate Plan Button Click Handler
+      document.getElementById('generatePlanBtn').addEventListener('click', function() {
+        if (!window.analysisData) {
+          alert('Please analyze an image first.');
+          return;
+        }
+
+        const goal = document.getElementById('goalSelect').value;
+        const duration = document.getElementById('durationSelect').value;
+        const level = document.getElementById('levelSelect').value;
+        const location = document.getElementById('locationSelect').value;
+        const trainingDays = document.getElementById('trainingDaysSelect').value;
+        const dietary = document.getElementById('dietarySelect').value;
+
+        // Validate all fields are selected
+        if (!goal || !duration || !level || !location || !trainingDays || !dietary) {
+          alert('Please fill in all the fields to generate your plan.');
+          return;
+        }
+
+        const data = window.analysisData;
+        
+        // Display results
+        document.getElementById('bodyTypeResult').textContent = data.predicted_body_type;
+        document.getElementById('confidenceResult').textContent = `${(data.confidence * 100).toFixed(1)}%`;
+        document.getElementById('planLevel').textContent = level;
+        document.getElementById('planDuration').textContent = `${duration} weeks`;
+        document.getElementById('planLocation').textContent = location;
+        document.getElementById('planExercises').textContent = data.exercises || 'Custom exercises based on your preferences';
+        document.getElementById('planDiet').textContent = data.diet || 'Custom diet plan based on your preferences';
+        
+        if (data.fallback_used) {
+          document.getElementById('fallbackNotice').style.display = 'block';
+        }
+        
+        document.getElementById('uploadArea').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'block';
+      });
+    });
+
+    function resetForm() {
+      document.getElementById('getStartedBtn').style.display = 'inline-flex';
+      document.getElementById('uploadArea').style.display = 'none';
+      document.getElementById('resultsSection').style.display = 'none';
+      document.querySelector('.image-preview-wrapper').style.display = 'none';
+      document.getElementById('imagePreview').src = '';
+      document.getElementById('previewPlaceholder').style.display = 'block';
+      document.getElementById('imageInput').value = '';
+      document.getElementById('analyzeImageBtn').disabled = true;
+      document.getElementById('analyzeImageBtn').style.display = 'block';
+      document.getElementById('fallbackNotice').style.display = 'none';
+      document.querySelector('.intro-section').style.display = 'block';
+      
+      // Hide survey section and analysis result
+      document.getElementById('surveySection').style.display = 'none';
+      document.getElementById('analysisResult').style.display = 'none';
+      window.analysisData = null;
+      
+      // Reset all dropdowns to default placeholder
+      const selects = ['goalSelect', 'durationSelect', 'levelSelect', 'locationSelect', 'trainingDaysSelect', 'dietarySelect'];
+      selects.forEach(id => {
+        const select = document.getElementById(id);
+        if (select) select.selectedIndex = 0;
+      });
+    }
+
+    // Scroll-aware header script
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.pageYOffset;
+      if (currentScroll <= 0) {
+        document.querySelector('header').classList.remove('hide');
+        return;
+      }
+      if (currentScroll > lastScroll && !document.querySelector('header').classList.contains('hide')) {
+        document.querySelector('header').classList.add('hide');
+      } else if (currentScroll < lastScroll && document.querySelector('header').classList.contains('hide')) {
+        document.querySelector('header').classList.remove('hide');
+      }
+      lastScroll = currentScroll;
+    });
+  </script>
+
+</body>
+</html>

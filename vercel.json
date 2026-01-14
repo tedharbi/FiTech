@@ -1,0 +1,13 @@
+{
+  "rewrites": [
+    { "source": "/api/upload", "destination": "/api/upload" },
+    { "source": "/api/history", "destination": "/api/history" },
+    { "source": "/api/summary", "destination": "/api/summary" },
+    { "source": "/api/disease-info", "destination": "/api/disease-info" },
+    { "source": "/summary", "destination": "/api/summary" },
+    { "source": "/information", "destination": "/information.html" },
+    { "source": "/analytics", "destination": "/analytics.html" },
+    { "source": "/home", "destination": "/index.html" }
+  ],
+  "redirects": [{ "source": "/", "destination": "/home", "permanent": false }]
+}

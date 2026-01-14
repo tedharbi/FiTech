@@ -1,0 +1,34 @@
+|-- .env
+|-- .gitignore
+|-- api
+    |-- disease-info.js
+    |-- history.js
+    |-- summary.js
+    |-- upload.js
+|-- fonts
+    |-- OpenSans-Regular.ttf
+|-- lib
+    |-- cache.js
+    |-- cloudinaryConfig.js
+    |-- db.js
+    |-- getAISuggestions.js
+    |-- getDiseaseInfo.js
+    |-- getDiseaseList.js
+    |-- getHistory.js
+    |-- imageScraper.js
+    |-- processUpload.js
+    |-- summary.js
+|-- LICENSE
+|-- package.json
+|-- public
+    |-- analytics.html
+    |-- index.html
+    |-- information.html
+    |-- script.js
+    |-- styles.css
+|-- README.md
+|-- server.cert
+|-- server.js
+|-- server.key
+|-- uploads
+|-- vercel.json

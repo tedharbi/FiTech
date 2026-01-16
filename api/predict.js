@@ -1,4 +1,4 @@
-import formidable from "formidable";
+import { IncomingForm } from "formidable";
 import fs from "fs";
 import FormData from "form-data";
 import fetch from "node-fetch"; // IMPORTANT: required in Vercel Node runtime
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-const form = formidable({ multiples: false });
+  const form = new IncomingForm({ multiples: false });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {

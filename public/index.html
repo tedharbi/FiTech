@@ -902,7 +902,7 @@ footer {
 
   <script src="script.js"></script>
 
-  <script>
+<script>
 document.addEventListener("DOMContentLoaded", function () {
 
   /* ---------------- NAVIGATION ---------------- */
@@ -966,7 +966,7 @@ document.addEventListener("DOMContentLoaded", function () {
     resetForm();
   });
 
-  /* ---------------- GLOBAL ANALYSIS STORAGE ---------------- */
+  /* ---------------- GLOBAL STORAGE ---------------- */
 
   window.analysisData = null;
 
@@ -982,20 +982,22 @@ document.addEventListener("DOMContentLoaded", function () {
     formData.append("image", imageInput.files[0]);
 
     try {
-      const response = await fetch("/api/predict", {
+      const response = await fetch("/api/analyze", {
         method: "POST",
         body: formData
       });
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error || "Inference failed");
+        throw new Error(err.error || "Analysis failed");
       }
 
       const data = await response.json();
       window.analysisData = data;
 
-      document.getElementById("detectedBodyType").textContent = data.predicted_body_type;
+      document.getElementById("detectedBodyType").textContent =
+        data.predicted_body_type;
+
       document.getElementById("detectedConfidence").textContent =
         `${(data.confidence * 100).toFixed(1)}%`;
 
@@ -1014,15 +1016,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /* ---------------- STEP 2: GENERATE PLAN ---------------- */
 
-  document.getElementById("generatePlanBtn").addEventListener("click", function () {
+  document.getElementById("generatePlanBtn").addEventListener("click", async function () {
     if (!window.analysisData) {
       alert("Please analyze an image first.");
       return;
     }
 
     const requiredFields = [
-      "goalSelect", "durationSelect", "levelSelect",
-      "locationSelect", "trainingDaysSelect", "dietarySelect"
+      "goalSelect",
+      "durationSelect",
+      "levelSelect",
+      "locationSelect",
+      "trainingDaysSelect",
+      "dietarySelect"
     ];
 
     for (const id of requiredFields) {
@@ -1032,33 +1038,59 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
-    const data = window.analysisData;
+    const payload = {
+      body_type: window.analysisData.predicted_body_type,
+      goal: document.getElementById("goalSelect").value,
+      duration: parseInt(document.getElementById("durationSelect").value, 10),
+      user_id: 1
+    };
 
-    document.getElementById("bodyTypeResult").textContent = data.predicted_body_type;
-    document.getElementById("confidenceResult").textContent =
-      `${(data.confidence * 100).toFixed(1)}%`;
+    try {
+      const response = await fetch("/api/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-    document.getElementById("planLevel").textContent =
-      document.getElementById("levelSelect").value;
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Plan generation failed");
+      }
 
-    document.getElementById("planDuration").textContent =
-      document.getElementById("durationSelect").value + " weeks";
+      const plan = await response.json();
 
-    document.getElementById("planLocation").textContent =
-      document.getElementById("locationSelect").value;
+      document.getElementById("bodyTypeResult").textContent =
+        plan.body_type;
 
-    document.getElementById("planExercises").textContent =
-      data.exercises || "Custom exercises coming soon";
+      document.getElementById("confidenceResult").textContent =
+        `${(window.analysisData.confidence * 100).toFixed(1)}%`;
 
-    document.getElementById("planDiet").textContent =
-      data.diet || "Custom diet plan coming soon";
+      document.getElementById("planLevel").textContent =
+        plan.level;
 
-    if (data.fallback_used) {
-      document.getElementById("fallbackNotice").style.display = "block";
+      document.getElementById("planDuration").textContent =
+        plan.duration_weeks + " weeks";
+
+      document.getElementById("planLocation").textContent =
+        plan.location;
+
+      document.getElementById("planExercises").textContent =
+        plan.exercises;
+
+      document.getElementById("planDiet").textContent =
+        plan.diet;
+
+      if (plan.fallback_used) {
+        document.getElementById("fallbackNotice").style.display = "block";
+      }
+
+      document.getElementById("uploadArea").style.display = "none";
+      document.getElementById("resultsSection").style.display = "block";
+
+    } catch (error) {
+      alert("Failed to generate plan. Check backend.");
+      console.error(error);
     }
-
-    document.getElementById("uploadArea").style.display = "none";
-    document.getElementById("resultsSection").style.display = "block";
   });
 });
 
@@ -1079,12 +1111,18 @@ function resetForm() {
 
   window.analysisData = null;
 
-  ["goalSelect", "durationSelect", "levelSelect",
-   "locationSelect", "trainingDaysSelect", "dietarySelect"]
-    .forEach(id => document.getElementById(id).selectedIndex = 0);
+  [
+    "goalSelect",
+    "durationSelect",
+    "levelSelect",
+    "locationSelect",
+    "trainingDaysSelect",
+    "dietarySelect"
+  ].forEach(id => {
+    document.getElementById(id).selectedIndex = 0;
+  });
 }
 </script>
-
 
 </body>
 </html>

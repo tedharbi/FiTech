@@ -904,224 +904,313 @@ footer {
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
-  /* ---------------- NAVIGATION ---------------- */
-
+  // Navigation
   const navMenu = document.getElementById("navMenu");
-
+  
   document.querySelectorAll("#navMenu a[data-target]").forEach((menuItem) => {
     menuItem.addEventListener("click", function (e) {
       e.preventDefault();
       const targetId = this.getAttribute("data-target");
       const targetSection = document.getElementById(targetId);
-
-      if (targetId === "home") resetForm();
-
+      
       if (targetSection) {
         targetSection.scrollIntoView({ behavior: "smooth" });
       }
-
-      navMenu.classList.remove("show");
+      
+      if (navMenu.classList.contains("show")) {
+        navMenu.classList.remove("show");
+      }
     });
   });
 
-  document.querySelector("header a[href='#']").addEventListener("click", function (e) {
-    e.preventDefault();
-    resetForm();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  // Menu toggle
+  document.querySelector(".menu-toggle")?.addEventListener("click", function() {
+    navMenu.classList.toggle("show");
   });
 
-  /* ---------------- GET STARTED ---------------- */
+  // Get Started Button
+  const getStartedBtn = document.getElementById("getStartedBtn");
+  if (getStartedBtn) {
+    getStartedBtn.addEventListener("click", function () {
+      document.getElementById("uploadArea").style.display = "block";
+      document.querySelector(".intro-section").style.display = "none";
+      this.style.display = "none";
+    });
+  }
 
-  document.getElementById("getStartedBtn").addEventListener("click", function () {
-    document.getElementById("uploadArea").style.display = "block";
-    document.querySelector(".intro-section").style.display = "none";
-    this.style.display = "none";
-  });
-
-  /* ---------------- IMAGE UPLOAD ---------------- */
-
+  // File upload handling
   const imageInput = document.getElementById("imageInput");
   const analyzeBtn = document.getElementById("analyzeImageBtn");
+  const previewPlaceholder = document.getElementById("previewPlaceholder");
 
-  imageInput.addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      document.getElementById("imagePreview").src = e.target.result;
-      document.querySelector(".image-preview-wrapper").style.display = "block";
-      document.getElementById("previewPlaceholder").style.display = "none";
-      analyzeBtn.disabled = false;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  document.getElementById("previewPlaceholder").addEventListener("click", () => {
-    imageInput.click();
-  });
-
-  document.getElementById("removeImageBtn").addEventListener("click", () => {
-    resetForm();
-  });
-
-  /* ---------------- GLOBAL STORAGE ---------------- */
-
-  window.analysisData = null;
-
-  /* ---------------- STEP 1: ANALYZE IMAGE ---------------- */
-
-  analyzeBtn.addEventListener("click", async function () {
-    if (!imageInput.files[0]) return;
-
-    analyzeBtn.disabled = true;
-    document.getElementById("loadingSpinner").style.display = "flex";
-
-    const formData = new FormData();
-    formData.append("image", imageInput.files[0]);
-
-    try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        body: formData
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Analysis failed");
-      }
-
-      const data = await response.json();
-      window.analysisData = data;
-
-      document.getElementById("detectedBodyType").textContent =
-        data.predicted_body_type;
-
-      document.getElementById("detectedConfidence").textContent =
-        `${(data.confidence * 100).toFixed(1)}%`;
-
-      document.getElementById("analysisResult").style.display = "block";
-      document.getElementById("surveySection").style.display = "block";
-      analyzeBtn.style.display = "none";
-
-    } catch (error) {
-      alert("Failed to analyze image. Check backend/ngrok.");
-      console.error(error);
-      analyzeBtn.disabled = false;
-    } finally {
-      document.getElementById("loadingSpinner").style.display = "none";
-    }
-  });
-
-  /* ---------------- STEP 2: GENERATE PLAN ---------------- */
-
-  document.getElementById("generatePlanBtn").addEventListener("click", async function () {
-    if (!window.analysisData) {
-      alert("Please analyze an image first.");
-      return;
-    }
-
-    const requiredFields = [
-      "goalSelect",
-      "durationSelect",
-      "levelSelect",
-      "locationSelect",
-      "trainingDaysSelect",
-      "dietarySelect"
-    ];
-
-    for (const id of requiredFields) {
-      if (!document.getElementById(id).value) {
-        alert("Please complete all survey fields.");
+  if (imageInput) {
+    imageInput.addEventListener("change", function () {
+      const file = this.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+      if (!validTypes.includes(file.type)) {
+        alert("Please upload a JPG or PNG image.");
+        this.value = "";
         return;
       }
-    }
+      
+      // Preview image
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById("imagePreview").src = e.target.result;
+        document.querySelector(".image-preview-wrapper").style.display = "block";
+        previewPlaceholder.style.display = "none";
+        analyzeBtn.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
-    const payload = {
-      body_type: window.analysisData.predicted_body_type,
-      goal: document.getElementById("goalSelect").value,
-      duration: parseInt(document.getElementById("durationSelect").value, 10),
-      user_id: 1
-    };
+  // Click placeholder to upload
+  if (previewPlaceholder) {
+    previewPlaceholder.addEventListener("click", () => {
+      imageInput.click();
+    });
+  }
 
-    try {
-      const response = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Plan generation failed");
-      }
-
-      const plan = await response.json();
-
-      document.getElementById("bodyTypeResult").textContent =
-        plan.body_type;
-
-      document.getElementById("confidenceResult").textContent =
-        `${(window.analysisData.confidence * 100).toFixed(1)}%`;
-
-      document.getElementById("planLevel").textContent =
-        plan.level;
-
-      document.getElementById("planDuration").textContent =
-        plan.duration_weeks + " weeks";
-
-      document.getElementById("planLocation").textContent =
-        plan.location;
-
-      document.getElementById("planExercises").textContent =
-        plan.exercises;
-
-      document.getElementById("planDiet").textContent =
-        plan.diet;
-
-      if (plan.fallback_used) {
-        document.getElementById("fallbackNotice").style.display = "block";
-      }
-
-      document.getElementById("uploadArea").style.display = "none";
-      document.getElementById("resultsSection").style.display = "block";
-
-    } catch (error) {
-      alert("Failed to generate plan. Check backend.");
-      console.error(error);
-    }
+  // Remove image button
+  document.getElementById("removeImageBtn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.querySelector(".image-preview-wrapper").style.display = "none";
+    previewPlaceholder.style.display = "block";
+    imageInput.value = "";
+    analyzeBtn.disabled = true;
   });
-});
 
-/* ---------------- RESET FORM ---------------- */
-
-function resetForm() {
-  document.getElementById("getStartedBtn").style.display = "inline-flex";
-  document.getElementById("uploadArea").style.display = "none";
-  document.getElementById("resultsSection").style.display = "none";
-  document.getElementById("analysisResult").style.display = "none";
-  document.getElementById("surveySection").style.display = "none";
-
-  document.querySelector(".image-preview-wrapper").style.display = "none";
-  document.getElementById("previewPlaceholder").style.display = "block";
-  document.getElementById("imageInput").value = "";
-  document.getElementById("analyzeImageBtn").disabled = true;
-  document.getElementById("analyzeImageBtn").style.display = "block";
-
+  // Global storage for analysis data
   window.analysisData = null;
 
-  [
-    "goalSelect",
-    "durationSelect",
-    "levelSelect",
-    "locationSelect",
-    "trainingDaysSelect",
-    "dietarySelect"
-  ].forEach(id => {
-    document.getElementById(id).selectedIndex = 0;
-  });
-}
+  // Analyze Image Button
+  if (analyzeBtn) {
+    analyzeBtn.addEventListener("click", async function () {
+      const fileInput = document.getElementById("imageInput");
+      if (!fileInput.files[0]) {
+        alert("Please select an image first.");
+        return;
+      }
+      
+      analyzeBtn.disabled = true;
+      document.getElementById("loadingSpinner").style.display = "flex";
+      
+      const formData = new FormData();
+      formData.append("image", fileInput.files[0]);
+      
+      try {
+        console.log("Uploading image to /api/analyze...");
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          body: formData
+        });
+        
+        const data = await response.json();
+        console.log("Analysis response:", data);
+        
+        if (!response.ok) {
+          throw new Error(data.error || `Analysis failed with status ${response.status}`);
+        }
+        
+        // Store analysis data globally
+        window.analysisData = data;
+        
+        // Show analysis results
+        document.getElementById("detectedBodyType").textContent = 
+          data.predicted_body_type || "Unknown";
+        document.getElementById("detectedConfidence").textContent = 
+          `${(data.confidence * 100).toFixed(1)}%`;
+        
+        document.getElementById("analysisResult").style.display = "block";
+        document.getElementById("surveySection").style.display = "block";
+        analyzeBtn.style.display = "none";
+        
+      } catch (error) {
+        console.error("Analysis error:", error);
+        alert(`Analysis failed: ${error.message}`);
+        analyzeBtn.disabled = false;
+      } finally {
+        document.getElementById("loadingSpinner").style.display = "none";
+      }
+    });
+  }
+
+  // Generate Plan Button
+  const generatePlanBtn = document.getElementById("generatePlanBtn");
+  if (generatePlanBtn) {
+    generatePlanBtn.addEventListener("click", async function () {
+      if (!window.analysisData) {
+        alert("Please analyze an image first.");
+        return;
+      }
+      
+      // Validate all required fields
+      const requiredFields = [
+        "goalSelect",
+        "durationSelect",
+        "levelSelect",
+        "locationSelect",
+        "trainingDaysSelect",
+        "dietarySelect"
+      ];
+      
+      for (const fieldId of requiredFields) {
+        const field = document.getElementById(fieldId);
+        if (!field || !field.value) {
+          alert(`Please complete all survey fields. Missing: ${fieldId}`);
+          return;
+        }
+      }
+      
+      // Prepare payload
+      const payload = {
+        body_type: window.analysisData.predicted_body_type,
+        goal: document.getElementById("goalSelect").value,
+        duration: parseInt(document.getElementById("durationSelect").value),
+        user_id: 1
+      };
+      
+      // Show loading state
+      generatePlanBtn.disabled = true;
+      const originalText = generatePlanBtn.innerHTML;
+      generatePlanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+      
+      try {
+        console.log("Generating plan with payload:", payload);
+        const response = await fetch("/api/generate-plan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        const planData = await response.json();
+        console.log("Plan response:", planData);
+        
+        if (!response.ok) {
+          throw new Error(planData.error || `Plan generation failed with status ${response.status}`);
+        }
+        
+        // Display the plan
+        document.getElementById("bodyTypeResult").textContent = 
+          planData.body_type || "Unknown";
+        document.getElementById("confidenceResult").textContent = 
+          `${(window.analysisData.confidence * 100).toFixed(1)}%`;
+        document.getElementById("planLevel").textContent = 
+          planData.level || "Beginner";
+        document.getElementById("planDuration").textContent = 
+          `${planData.duration_weeks || 4} weeks`;
+        document.getElementById("planLocation").textContent = 
+          planData.location || "Home";
+        document.getElementById("planExercises").textContent = 
+          planData.exercises || "No exercises specified";
+        document.getElementById("planDiet").textContent = 
+          planData.diet || "No diet plan specified";
+        
+        // Show fallback notice if used
+        if (planData.fallback_used) {
+          document.getElementById("fallbackNotice").style.display = "block";
+        }
+        
+        // Show results and hide upload area
+        document.getElementById("uploadArea").style.display = "none";
+        document.getElementById("resultsSection").style.display = "block";
+        
+        // Scroll to results
+        setTimeout(() => {
+          document.getElementById("resultsSection").scrollIntoView({ 
+            behavior: "smooth", 
+            block: "start" 
+          });
+        }, 100);
+        
+      } catch (error) {
+        console.error("Plan generation error:", error);
+        alert(`Failed to generate plan: ${error.message}`);
+      } finally {
+        // Restore button state
+        generatePlanBtn.disabled = false;
+        generatePlanBtn.innerHTML = originalText;
+      }
+    });
+  }
+
+  // Reset function
+  window.resetForm = function() {
+    // Show intro and get started button
+    document.querySelector(".intro-section").style.display = "block";
+    document.getElementById("getStartedBtn").style.display = "inline-flex";
+    
+    // Hide upload and results sections
+    document.getElementById("uploadArea").style.display = "none";
+    document.getElementById("resultsSection").style.display = "none";
+    document.getElementById("analysisResult").style.display = "none";
+    document.getElementById("surveySection").style.display = "none";
+    document.getElementById("fallbackNotice").style.display = "none";
+    
+    // Reset image preview
+    document.querySelector(".image-preview-wrapper").style.display = "none";
+    previewPlaceholder.style.display = "block";
+    imageInput.value = "";
+    analyzeBtn.disabled = true;
+    analyzeBtn.style.display = "block";
+    
+    // Reset form fields
+    ["goalSelect", "durationSelect", "levelSelect", "locationSelect", 
+     "trainingDaysSelect", "dietarySelect"].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) element.selectedIndex = 0;
+    });
+    
+    // Clear analysis data
+    window.analysisData = null;
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+});
+
+// Scroll-aware header
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+  const currentScroll = window.pageYOffset;
+  const header = document.querySelector('header');
+  
+  if (!header) return;
+  
+  if (currentScroll <= 0) {
+    header.classList.remove('hide');
+    return;
+  }
+  
+  if (currentScroll > lastScroll && !header.classList.contains('hide')) {
+    header.classList.add('hide');
+  } else if (currentScroll < lastScroll && header.classList.contains('hide')) {
+    header.classList.remove('hide');
+  }
+  
+  lastScroll = currentScroll;
+});
+
+// Test backend connection on load
+window.addEventListener('load', async () => {
+  try {
+    const response = await fetch('/api/health');
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Backend connected:', data);
+    } else {
+      console.warn('⚠️ Backend health check failed');
+    }
+  } catch (error) {
+    console.error('❌ Cannot connect to backend:', error);
+  }
+});
 </script>
 
 </body>

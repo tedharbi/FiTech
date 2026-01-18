@@ -1,11 +1,12 @@
 import { IncomingForm } from "formidable";
 import fs from "fs";
 import fetch from "node-fetch";
-import { FormData } from "form-data";
+import pkg from "form-data";
+const { FormData } = pkg;
 
 export const config = {
   api: {
-    bodyParser: false, // Disable Vercel's default body parsing
+    bodyParser: false,
   },
 };
 
@@ -14,7 +15,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Create a temporary directory for uploads
   const uploadDir = "/tmp/uploads";
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   const form = new IncomingForm({
     uploadDir: uploadDir,
     keepExtensions: true,
-    maxFileSize: 5 * 1024 * 1024, // 5MB limit
+    maxFileSize: 5 * 1024 * 1024,
   });
 
   return new Promise((resolve, reject) => {
@@ -41,7 +41,6 @@ export default async function handler(req, res) {
       }
 
       try {
-        // Get the ngrok URL from environment variable
         const inferenceApiUrl = process.env.INFERENCE_API_URL;
         if (!inferenceApiUrl) {
           console.error("INFERENCE_API_URL not set");
@@ -50,37 +49,65 @@ export default async function handler(req, res) {
         }
 
         console.log(`Forwarding to: ${inferenceApiUrl}/analyze`);
-        console.log(`File: ${file.originalFilename}, Size: ${file.size}`);
 
-        // Create FormData for the Flask backend
+        // Create FormData
         const formData = new FormData();
-
-        // Read the file and append it
         const fileStream = fs.createReadStream(file.filepath);
-        formData.append("image", fileStream, file.originalFilename);
+        formData.append(
+          "image",
+          fileStream,
+          file.originalFilename || "image.jpg",
+        );
 
-        // Forward to Flask backend
+        // Forward to Flask with timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
         const response = await fetch(`${inferenceApiUrl}/analyze`, {
           method: "POST",
           body: formData,
-          // Note: FormData will set its own headers with boundary
+          signal: controller.signal,
         });
 
-        // Get the response from Flask
-        const data = await response.json();
+        clearTimeout(timeout);
 
-        console.log(`Flask response: ${response.status}`, data);
+        // Check content type to ensure it's JSON
+        const contentType = response.headers.get("content-type") || "";
+        let data;
 
-        // Return the Flask response to the frontend
+        if (contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          // If not JSON, read as text
+          const text = await response.text();
+          console.error("Flask returned non-JSON:", text.substring(0, 200));
+          throw new Error(
+            `Flask returned ${response.status}: ${text.substring(0, 100)}`,
+          );
+        }
+
+        console.log(`Flask response: ${response.status}`);
+
+        // Return response
         res.status(response.status).json(data);
       } catch (error) {
-        console.error("Error forwarding to Flask:", error);
-        res.status(500).json({
-          error: "Failed to process image",
-          details: error.message,
-        });
+        console.error("Error in analyze.js:", error);
+
+        if (error.name === "AbortError") {
+          res
+            .status(504)
+            .json({
+              error: "Request timeout",
+              details: "Flask server took too long to respond",
+            });
+        } else {
+          res.status(500).json({
+            error: "Failed to process image",
+            details: error.message,
+          });
+        }
       } finally {
-        // Clean up the uploaded file
+        // Clean up
         if (file && file.filepath && fs.existsSync(file.filepath)) {
           fs.unlinkSync(file.filepath);
         }

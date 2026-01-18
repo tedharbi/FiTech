@@ -1,48 +1,42 @@
-import { IncomingForm } from "formidable";
-import fs from "fs";
-import fetch from "node-fetch";
-
-export const config = {
-  api: { bodyParser: false },
-};
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).end();
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const form = new IncomingForm({ multiples: false });
+  try {
+    // Get the raw body as ArrayBuffer
+    const arrayBuffer = await req.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      return res.status(400).json({ error: "Form parsing failed" });
+    // Create FormData for Flask
+    const formData = new FormData();
+    formData.append("image", buffer, "image.jpg");
+
+    // Get the ngrok URL from environment variable
+    const inferenceApiUrl = process.env.INFERENCE_API_URL;
+    if (!inferenceApiUrl) {
+      return res
+        .status(500)
+        .json({ error: "INFERENCE_API_URL not configured" });
     }
 
-    const file = files.image;
-    if (!file || !file.filepath) {
-      return res.status(400).json({ error: "No image uploaded" });
-    }
+    console.log("Forwarding to:", inferenceApiUrl + "/analyze");
 
-    try {
-      const formData = new FormData();
-      formData.append(
-        "image",
-        fs.createReadStream(file.filepath),
-        file.originalFilename,
-      );
+    // Forward to Flask backend
+    const response = await fetch(`${inferenceApiUrl}/analyze`, {
+      method: "POST",
+      body: formData,
+    });
 
-      const response = await fetch(`${process.env.INFERENCE_API_URL}/analyze`, {
-        method: "POST",
-        body: formData,
-        headers: formData.getHeaders(),
-      });
+    const data = await response.json();
 
-      const data = await response.json();
-      return res.status(response.status).json(data);
-    } finally {
-      if (fs.existsSync(file.filepath)) {
-        fs.unlinkSync(file.filepath);
-      }
-    }
-  });
+    // Log for debugging
+    console.log("Flask response status:", response.status);
+    console.log("Flask response data:", data);
+
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error("Error in analyze.js:", error);
+    return res.status(500).json({ error: error.message });
+  }
 }

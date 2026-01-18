@@ -1,81 +1,116 @@
-import { IncomingForm } from "formidable";
+// api/analyze.js
+import formidable from "formidable";
 import fs from "fs";
-import FormData from "form-data";
-import fetch from "node-fetch";
+import path from "path";
+import FormData from "form-data"; // default import (do NOT use named import)
+import fetch from "node-fetch"; // ensure this is in package.json dependencies
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // required for multipart uploads
   },
 };
 
-const INFERENCE_URL = process.env.INFERENCE_API_URL || "http://127.0.0.1:5000";
+const INFERENCE_API_URL = process.env.INFERENCE_API_URL; // e.g. https://<your-ngrok>.ngrok-free.dev
+const ALLOWED_EXT = ["png", "jpg", "jpeg"];
+
+function isAllowedFile(filename) {
+  if (!filename) return false;
+  const ext = filename.split(".").pop().toLowerCase();
+  return ALLOWED_EXT.includes(ext);
+}
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (!INFERENCE_API_URL)
+    return res
+      .status(500)
+      .json({ error: "INFERENCE_API_URL is not set in environment" });
 
-  const form = new IncomingForm({
-    multiples: false,
-    keepExtensions: true,
-  });
+  const form = formidable({ multiples: false });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
       console.error("Form parse error:", err);
-      return res.status(400).json({ error: "Invalid form data" });
+      return res.status(400).json({ error: "File parsing failed" });
     }
 
-    const file = files.image;
+    const file = files?.image;
+    if (!file)
+      return res
+        .status(400)
+        .json({ error: "No image uploaded (field 'image')" });
 
-    if (!file) {
-      return res.status(400).json({ error: "No image uploaded" });
-    }
-
-    // ✅ THIS IS THE IMPORTANT PART
-    const filepath = file.filepath;
+    // Support different formidable versions: file.filepath (new)
+    const filepath = file.filepath || file.tempFilePath;
+    const filename =
+      file.originalFilename || file.name || path.basename(filepath || "");
 
     if (!filepath) {
-      return res.status(400).json({
-        error: "Upload temporary file missing",
-      });
+      console.error("No temporary filepath found on uploaded file:", file);
+      return res.status(400).json({ error: "Upload temporary file missing" });
     }
 
-    try {
-      const formData = new FormData();
-      formData.append("image", fs.createReadStream(filepath));
-
-      const response = await fetch(`${INFERENCE_URL}/analyze`, {
-        method: "POST",
-        body: formData,
-        headers: formData.getHeaders(),
-      });
-
-      const text = await response.text();
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        return res.status(500).json({
-          error: "Invalid response from inference server",
-          raw: text,
-        });
-      }
-
-      return res.status(response.status).json(data);
-    } catch (error) {
-      console.error("Inference error:", error);
-      return res.status(500).json({
-        error: "Inference service failed",
-        details: error.message,
-      });
-    } finally {
-      // ✅ CLEANUP SAFELY
+    if (!isAllowedFile(filename)) {
       try {
         fs.unlinkSync(filepath);
-      } catch (_) {}
+      } catch (e) {}
+      return res
+        .status(400)
+        .json({ error: "Invalid file type", allowed: ALLOWED_EXT });
+    }
+
+    // Build multipart body to forward to Flask
+    const forwardForm = new FormData();
+    forwardForm.append("image", fs.createReadStream(filepath), filename);
+
+    // forward safe optional fields if present
+    ["goal", "duration", "user_id"].forEach((k) => {
+      if (fields?.[k]) forwardForm.append(k, fields[k]);
+    });
+
+    // Forward to backend /analyze
+    try {
+      const inferenceRes = await fetch(
+        `${INFERENCE_API_URL.replace(/\/$/, "")}/analyze`,
+        {
+          method: "POST",
+          body: forwardForm,
+          headers: forwardForm.getHeaders(), // required for node-fetch + form-data
+        },
+      );
+
+      const text = await inferenceRes.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        // backend returned non-JSON (likely HTML error page); pass raw text
+        json = { raw: text };
+      }
+
+      // cleanup temp file
+      try {
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      } catch (e) {
+        console.warn("cleanup failed", e);
+      }
+
+      // forward status and body
+      return res.status(inferenceRes.status).json(json);
+    } catch (error) {
+      // cleanup and return 502
+      try {
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      } catch (e) {}
+      console.error("Error calling inference backend:", error);
+      return res
+        .status(502)
+        .json({
+          error: "Inference service unavailable",
+          details: error.message,
+        });
     }
   });
 }

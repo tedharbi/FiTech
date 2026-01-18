@@ -1,136 +1,116 @@
-import { IncomingForm } from "formidable";
+// api/analyze.js
+import formidable from "formidable";
 import fs from "fs";
-import fetch from "node-fetch";
-import FormData from "form-data"; // CHANGED: default import
+import path from "path";
+import FormData from "form-data"; // default import (do NOT use named import)
+import fetch from "node-fetch"; // ensure this is in package.json dependencies
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // required for multipart uploads
   },
 };
 
-// Only allow formats your ML model can handle
-const ALLOWED_EXTENSIONS = ["png", "jpg", "jpeg"];
+const INFERENCE_API_URL = process.env.INFERENCE_API_URL; // e.g. https://<your-ngrok>.ngrok-free.dev
+const ALLOWED_EXT = ["png", "jpg", "jpeg"];
 
 function isAllowedFile(filename) {
   if (!filename) return false;
   const ext = filename.split(".").pop().toLowerCase();
-  return ALLOWED_EXTENSIONS.includes(ext);
+  return ALLOWED_EXT.includes(ext);
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (!INFERENCE_API_URL)
+    return res
+      .status(500)
+      .json({ error: "INFERENCE_API_URL is not set in environment" });
 
-  const uploadDir = "/tmp/uploads";
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
+  const form = formidable({ multiples: false });
 
-  const form = new IncomingForm({
-    uploadDir: uploadDir,
-    keepExtensions: true,
-    maxFileSize: 5 * 1024 * 1024,
-  });
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      console.error("Form parse error:", err);
+      return res.status(400).json({ error: "File parsing failed" });
+    }
 
-  return new Promise((resolve, reject) => {
-    form.parse(req, async (err, fields, files) => {
-      if (err) {
-        console.error("Form parsing error:", err);
-        res.status(400).json({ error: "Failed to parse form data" });
-        return resolve();
-      }
+    const file = files?.image;
+    if (!file)
+      return res
+        .status(400)
+        .json({ error: "No image uploaded (field 'image')" });
 
-      const file = files.image;
-      if (!file || !file.filepath) {
-        res.status(400).json({ error: "No image uploaded" });
-        return resolve();
-      }
+    // Support different formidable versions: file.filepath (new), file.path (old)
+    const filepath = file.filepath || file.path || file.tempFilePath;
+    const filename =
+      file.originalFilename || file.name || path.basename(filepath || "");
 
-      // NEW: Validate file type
-      const filename = file.originalFilename || "image.jpg";
-      if (!isAllowedFile(filename)) {
-        fs.unlinkSync(file.filepath);
-        return res.status(400).json({
-          error: "Invalid file type",
-          allowed: ALLOWED_EXTENSIONS,
-        });
-      }
+    if (!filepath) {
+      console.error("No temporary filepath found on uploaded file:", file);
+      return res.status(400).json({ error: "Upload temporary file missing" });
+    }
 
+    if (!isAllowedFile(filename)) {
       try {
-        const inferenceApiUrl = process.env.INFERENCE_API_URL;
-        if (!inferenceApiUrl) {
-          console.error("INFERENCE_API_URL not set");
-          res.status(500).json({ error: "Server configuration error" });
-          return resolve();
-        }
+        fs.unlinkSync(filepath);
+      } catch (e) {}
+      return res
+        .status(400)
+        .json({ error: "Invalid file type", allowed: ALLOWED_EXT });
+    }
 
-        console.log(`Forwarding to: ${inferenceApiUrl}/analyze`);
+    // Build multipart body to forward to Flask
+    const forwardForm = new FormData();
+    forwardForm.append("image", fs.createReadStream(filepath), filename);
 
-        // Create FormData
-        const formData = new FormData();
-        const fileStream = fs.createReadStream(file.filepath);
-        formData.append("image", fileStream, filename);
-
-        // FIXED: Add timeout
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
-
-        const response = await fetch(`${inferenceApiUrl}/analyze`, {
-          method: "POST",
-          body: formData,
-          headers: formData.getHeaders(), // ← ADD THIS LINE
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeout);
-
-        // Handle response (JSON or error)
-        const contentType = response.headers.get("content-type") || "";
-
-        if (contentType.includes("application/json")) {
-          const data = await response.json();
-          console.log(`Flask response: ${response.status}`);
-          res.status(response.status).json(data);
-        } else {
-          // Flask returned HTML error page
-          const text = await response.text();
-          console.error("Flask returned HTML error:", text.substring(0, 200));
-
-          // Try to extract error from HTML
-          let errorMsg = `Server error (${response.status})`;
-          const match = text.match(/<title>(.*?)<\/title>|<p[^>]*>(.*?)<\/p>/);
-          if (match) {
-            errorMsg = match[1] || match[2] || errorMsg;
-          }
-
-          res.status(response.status).json({
-            error: errorMsg,
-            details: "Flask server returned an error page",
-          });
-        }
-      } catch (error) {
-        console.error("Error in analyze.js:", error);
-
-        if (error.name === "AbortError") {
-          res.status(504).json({
-            error: "Request timeout",
-            details: "Flask server took too long to respond",
-          });
-        } else {
-          res.status(500).json({
-            error: "Failed to process image",
-            details: error.message,
-          });
-        }
-      } finally {
-        // Clean up
-        if (file && file.filepath && fs.existsSync(file.filepath)) {
-          fs.unlinkSync(file.filepath);
-        }
-        resolve();
-      }
+    // forward safe optional fields if present
+    ["goal", "duration", "user_id"].forEach((k) => {
+      if (fields?.[k]) forwardForm.append(k, fields[k]);
     });
+
+    // Forward to backend /analyze
+    try {
+      const inferenceRes = await fetch(
+        `${INFERENCE_API_URL.replace(/\/$/, "")}/analyze`,
+        {
+          method: "POST",
+          body: forwardForm,
+          headers: forwardForm.getHeaders(), // required for node-fetch + form-data
+        },
+      );
+
+      const text = await inferenceRes.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        // backend returned non-JSON (likely HTML error page); pass raw text
+        json = { raw: text };
+      }
+
+      // cleanup temp file
+      try {
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      } catch (e) {
+        console.warn("cleanup failed", e);
+      }
+
+      // forward status and body
+      return res.status(inferenceRes.status).json(json);
+    } catch (error) {
+      // cleanup and return 502
+      try {
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      } catch (e) {}
+      console.error("Error calling inference backend:", error);
+      return res
+        .status(502)
+        .json({
+          error: "Inference service unavailable",
+          details: error.message,
+        });
+    }
   });
 }

@@ -448,6 +448,35 @@ main{
   font-size: 14px;
 }
 
+/* Restart Analysis Button */
+.restart-analysis-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.9);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.restart-analysis-btn:hover {
+  background: #6366f1;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.restart-analysis-btn i {
+  font-size: 14px;
+}
+
 /* Body Type Description Styles */
 .body-type-desc {
   margin-top: 16px;
@@ -785,6 +814,9 @@ footer {
               <button type="button" id="removeImageBtn" class="remove-image-btn" title="Remove image">
                 <i class="fas fa-trash-alt"></i>
               </button>
+              <button type="button" id="restartAnalysisBtn" class="restart-analysis-btn" style="display: none;" title="Start over">
+                <i class="fas fa-redo-alt"></i>
+              </button>
             </div>
             <p id="previewPlaceholder" style="color:var(--muted); padding: 40px 20px; border-radius: 8px; background: rgba(0,0,0,0.12); width: 100%; text-align: center;">No image selected</p>
           </div>
@@ -1078,7 +1110,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Remove image button
+  // Remove image button (only works before analysis)
   document.getElementById("removeImageBtn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     document.querySelector(".image-preview-wrapper").style.display = "none";
@@ -1086,6 +1118,43 @@ document.addEventListener("DOMContentLoaded", function () {
     imageInput.value = "";
     analyzeBtn.disabled = true;
   });
+
+  // Restart Analysis button (resets to initial upload state)
+  document.getElementById("restartAnalysisBtn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    resetUploadModule();
+  });
+
+  // Function to reset only the upload module (not the whole page)
+  function resetUploadModule() {
+    // Reset image preview
+    document.querySelector(".image-preview-wrapper").style.display = "none";
+    previewPlaceholder.style.display = "block";
+    imageInput.value = "";
+    
+    // Hide analysis results and survey
+    document.getElementById("analysisResult").style.display = "none";
+    document.getElementById("surveySection").style.display = "none";
+    document.getElementById("bodyTypeDescription").style.display = "none";
+    
+    // Reset buttons
+    analyzeBtn.disabled = true;
+    analyzeBtn.style.display = "block";
+    
+    // Switch back to trash button
+    document.getElementById("removeImageBtn").style.display = "flex";
+    document.getElementById("restartAnalysisBtn").style.display = "none";
+    
+    // Reset form fields
+    ["goalSelect", "durationSelect", "levelSelect", "locationSelect", 
+     "trainingDaysSelect", "dietarySelect"].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) element.selectedIndex = 0;
+    });
+    
+    // Clear analysis data
+    window.analysisData = null;
+  }
 
   // Global storage for analysis data
   window.analysisData = null;
@@ -1130,6 +1199,10 @@ document.addEventListener("DOMContentLoaded", function () {
         
         // Show body type description
         showBodyTypeDescription(data.predicted_body_type);
+        
+        // Switch trash button to restart button
+        document.getElementById("removeImageBtn").style.display = "none";
+        document.getElementById("restartAnalysisBtn").style.display = "flex";
         
         document.getElementById("analysisResult").style.display = "block";
         document.getElementById("surveySection").style.display = "block";
@@ -1266,6 +1339,10 @@ document.addEventListener("DOMContentLoaded", function () {
     imageInput.value = "";
     analyzeBtn.disabled = true;
     analyzeBtn.style.display = "block";
+    
+    // Reset buttons to initial state (show trash, hide restart)
+    document.getElementById("removeImageBtn").style.display = "flex";
+    document.getElementById("restartAnalysisBtn").style.display = "none";
     
     // Reset form fields
     ["goalSelect", "durationSelect", "levelSelect", "locationSelect", 

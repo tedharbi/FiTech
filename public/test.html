@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home | FiTech • AI-Powered Predictive Fitness System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<style>
+  :root{
+  --bg: #0f1724;        
+  --surface: #111827;   
+  --muted: #94a3b8;     
+  --accent: #ff6b00;    
+  --accent-2: #00d084;  
+  --glass: rgba(255,255,255,0.03);
+  --card-radius: 12px;
+  --container-width: 1200px;
+}
+
+html {
+  height: 100%;
+}
+
+body{
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #071021 url('https://png.pngtree.com/thumb_back/fh260/background/20230630/pngtree-dark-fitness-room-with-training-equipment-and-black-dumbbells-on-the-image_3698810.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: #e6eef8;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.45;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Optional: subtle dark overlay to improve text readability over the gym background */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(7, 16, 33, 0.75); /* Dark tint matching your original gradient */
+  pointer-events: none;
+  z-index: -1;
+}
+
+.container{
+  width:94%;
+  margin:auto;
+  padding:13px;
+  justify-content: space-between;
+}
+
+main{
+  padding:20px 0 60px;
+  flex: 1 0 auto;
+}
+
+.hero-section{display:flex; align-items: flex-start; margin-bottom: 40px;}
+.hero-section h2{font-size:32px;margin:0 0 16px;color:#fff; line-height: 1.3;}
+.hero-section p{color:var(--muted);margin:0 0 24px; font-size: 16px;}
+
+.hero-card{background:var(--surface);padding:28px;border-radius:var(--card-radius);box-shadow: 0 6px 18px rgba(3,10,18,0.6);border:1px solid rgba(255,255,255,0.02)}
+
+.results-area{
+  margin-top: 24px;
+  padding:24px;
+  border-radius:12px;
+  background:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(255,255,255,0.02));
+  border:1px solid rgba(255,255,255,0.02);
+}
+
+.result-item{
+  margin-bottom:16px;
+}
+
+.result-item strong{
+  color:#fff;
+}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content: center;
+  gap:8px;
+  padding:12px 18px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.03);
+  background:transparent;
+  color:var(--muted);
+  cursor:pointer;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.primary-btn{
+  background:linear-gradient(90deg,var(--accent),#ff9b57);
+  color:#071021;
+  border:none;
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255,107,0,0.3);
+}
+
+/* Responsive */
+@media (max-width:900px){
+  .hero-section{display:block;}
+  .container{width:96%;}
+  
+  .hero-card {
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .hero-card {
+    padding: 20px;
+  }
+}
+</style>
+
+</head>
+
+<body>
+
+  <main class="container">
+    <section id="home" class="hero-section">
+      <div class="hero-card" style="width: 800px; text-align: center; margin: auto;">
+        <h2 style="font-size: 32px; margin-bottom: 16px;">Train Smarter with FiTech</h2>
+        <p style="font-size: 16px; line-height: 1.6; margin-bottom: 30px;">Upload a full-body image to get your personalized fitness plan powered by machine learning.</p>
+
+        <div id="resultsSection" class="results-area" style="max-width: 500px; margin: 0 auto;">
+          <h3 style="color: #fff; margin-top: 0; margin-bottom: 20px; font-size: 22px;">Your Personalized Fitness Plan</h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Body Type</div>
+              <div style="font-weight: 600; color: #fff;" id="bodyTypeResult">Ectomorph</div>
+            </div>
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Confidence</div>
+              <div style="font-weight: 600; color: #fff;" id="confidenceResult">92.5%</div>
+            </div>
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Plan Level</div>
+              <div style="font-weight: 600; color: #fff;" id="planLevel">Intermediate</div>
+            </div>
+            <div class="result-item">
+              <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Duration</div>
+              <div style="font-weight: 600; color: #fff;" id="planDuration">8 weeks</div>
+            </div>
+          </div>
+
+          <div class="result-item" style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Location</div>
+            <div style="font-weight: 600; color: #fff;" id="planLocation">Gym</div>
+          </div>
+
+          <div class="result-item" style="margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Exercises</div>
+            <div style="font-weight: 600; color: #fff; font-size: 14px; line-height: 1.5;" id="planExercises">Strength training 4x/week: Squats, Deadlifts, Bench Press, Rows, Pull-ups, Shoulder Press. Cardio: HIIT 2x/week.</div>
+          </div>
+
+          <div class="result-item" style="margin-bottom: 20px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Diet Plan</div>
+            <div style="font-weight: 600; color: #fff; font-size: 14px; line-height: 1.5;" id="planDiet">High protein diet: 1.8g/kg body weight. 300-500 calorie surplus. Focus on lean meats, complex carbs, healthy fats. 5-6 meals/day.</div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none;" id="fallbackNotice">
+            <i class="fas fa-info-circle" style="color: #ff6b00; margin-right: 8px;"></i>
+            <span style="font-size: 13px; color: var(--muted);">Using a fallback plan. A custom plan for your specific body type and goal combination will be available soon.</span>
+          </div>
+
+          <button class="btn primary-btn" style="width: 100%; padding: 14px;">
+            <i class="fas fa-redo"></i> New Analysis
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+  // Simple reset function
+  function resetForm() {
+    alert("This would reset the form in the full application.");
+  }
+  
+  // Add click event to the button
+  document.querySelector('.primary-btn').addEventListener('click', resetForm);
+</script>
+
+</body>
+</html>

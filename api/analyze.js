@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Failed to parse form data" });
     }
 
-    // GET THE FILE - handle array case
+    // GET FILE
     let file = files.image;
 
     // If formidable returns an array, take first element
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     try {
       const formData = new FormData();
 
-      // Use the actual filepath from your logs
+      // Use actual filepath from logs
       const fileStream = fs.createReadStream(file.filepath);
       formData.append(
         "image",

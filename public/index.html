@@ -719,7 +719,7 @@ footer {
   <header>
     <div class="container">
       <button class="menu-toggle"><i class="fas fa-bars"></i></button>
-      <a style="color: #fff;text-decoration: none;display:flex;align-items:center;gap:12px;" href="#">
+      <a id="systemTitle" style="color: #fff;text-decoration: none;display:flex;align-items:center;gap:12px;cursor:pointer;" href="#">
         <h1>
           <span class="brand-icon"><i class="fas fa-dumbbell"></i></span>
           <span style="color:#fff; font-weight:700;">FiTech</span>
@@ -729,7 +729,6 @@ footer {
       <nav>
         <ul id="navMenu">
           <li><a href="#" data-target="home">Home</a></li>
-          <li><a href="#" data-target="history">History</a></li>
         </ul>
       </nav>
     </div>
@@ -925,6 +924,37 @@ footer {
                 </div>
               </div>
 
+              <!-- Number of Training Days per Week -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Training Days per Week:</label>
+                <div class="custom-select-wrapper">
+                  <select id="trainingDaysSelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="2">2 days</option>
+                    <option value="3">3 days</option>
+                    <option value="4">4 days</option>
+                    <option value="5">5 days</option>
+                    <option value="6">6 days</option>
+                    <option value="7">7 days</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Dietary Restrictions -->
+              <div style="margin-top: 16px;">
+                <label style="display: block; color: var(--muted); margin-bottom: 8px; font-size: 14px;">Dietary Restrictions:</label>
+                <div class="custom-select-wrapper">
+                  <select id="dietarySelect" class="custom-select" required>
+                    <option value="" selected disabled hidden>Select an option</option>
+                    <option value="None">None</option>
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Vegan">Vegan</option>
+                    <option value="Gluten-free">Gluten-free</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
               <button id="generatePlanBtn" class="btn success-btn" style="width: 100%; margin-top: 24px; padding: 14px;">
                 <i class="fas fa-magic"></i> Generate My Plan
               </button>
@@ -982,13 +1012,6 @@ footer {
       </div>
     </section>
 
-    <section id="history" class="history-section">
-      <h2>Previous Workouts</h2>
-      <div id="historyList" class="history-list"></div>
-      <p id="noHistoryMessage" style="display:none; text-align:center; color:var(--muted)">No previous workouts found.</p>
-    </section>
-    <button id="loadMoreBtn" class="btn" style="display: none; margin: 20px auto 0;">Show More</button>
-
   </main>
 
 
@@ -1008,6 +1031,22 @@ footer {
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  // System title click handler - navigate to homepage
+  const systemTitle = document.getElementById("systemTitle");
+  if (systemTitle) {
+    systemTitle.addEventListener("click", function(e) {
+      e.preventDefault();
+      // If user is in the analysis module, reset to homepage
+      if (document.getElementById("uploadArea").style.display !== "none" || 
+          document.getElementById("resultsSection").style.display !== "none") {
+        resetForm();
+      } else {
+        // Already on homepage, scroll to top
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+  }
+
   // Navigation
   const navMenu = document.getElementById("navMenu");
   
@@ -1036,9 +1075,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const getStartedBtn = document.getElementById("getStartedBtn");
   if (getStartedBtn) {
     getStartedBtn.addEventListener("click", function () {
-      document.getElementById("uploadArea").style.display = "block";
-      document.querySelector(".intro-section").style.display = "none";
-      this.style.display = "none";
+      document.getElementById("uploadModule").style.display = "block";
+      document.querySelector(".intro-section").parentElement.parentElement.style.display = "none";
+      document.querySelector(".how-it-works-section").style.display = "none";
+      document.getElementById("scrollArrow").style.display = "none";
+      
+      // Scroll to upload module
+      setTimeout(() => {
+        document.getElementById("uploadModule").scrollIntoView({ behavior: "smooth" });
+      }, 100);
     });
   }
 
